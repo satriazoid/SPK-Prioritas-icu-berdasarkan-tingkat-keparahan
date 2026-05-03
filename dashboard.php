@@ -287,7 +287,7 @@ $spearman = round(spearman($comparison), 4);
 <div class="page">
   <div class="page-header">
     <h1>Dashboard Prioritas ICU</h1>
-    <p>Perbandingan ranking AHP+SAW vs AHP+WP &nbsp;·&nbsp; <?= count($patients) ?> pasien dimuat &nbsp;·&nbsp; <?= $pdo ? 'Database: Terhubung' : 'Mode Demo (DB tidak terhubung)' ?></p>
+    <p>Perbandingan ranking AHP+SAW vs AHP+WP &nbsp;·&nbsp; <?= count($patients) ?> pasien dimuat &nbsp;·&nbsp; <?= $pdo ? 'Database: Terhubung ✓' : 'Mode Demo (DB tidak terhubung)' ?></p>
     <?php if ($dbError): ?>
       <p style="color:var(--orange);font-size:.8rem;margin-top:.3rem">⚠ <?= htmlspecialchars($dbError) ?></p>
     <?php endif; ?>
@@ -344,6 +344,7 @@ $spearman = round(spearman($comparison), 4);
   <div class="toolbar">
     <form method="GET" style="display:contents">
       <div class="search-box">
+        <span style="color:var(--muted)">🔍</span>
         <input type="text" name="search" placeholder="Cari patient ID..." value="<?= htmlspecialchars($search) ?>" onchange="this.form.submit()">
         <input type="hidden" name="method" value="<?= $method ?>">
       </div>
