@@ -359,7 +359,7 @@ $saatyScale = [
 
   <div style="text-align:center;margin:2rem 0">
     <a href="dashboard.php" style="display:inline-flex;align-items:center;gap:.5rem;padding:.85rem 2rem;background:var(--blue);color:#fff;border-radius:8px;text-decoration:none;font-size:.9rem;font-weight:600">
-      ← Kembali ke Dashboard
+      Kembali ke Dashboard
     </a>
   </div>
 
