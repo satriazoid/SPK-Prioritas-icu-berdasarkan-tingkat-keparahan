@@ -18,5 +18,4 @@ Sistem ini mengambil data medis pasien seperti usia, BMI, kadar oksigen (SpO2), 
 ##  Teknologi
 - PHP (Native)
 - MySQL (Laragon / phpMyAdmin)
-- Python (Jupyter Notebook untuk Preprocessing)
 - Kaggle Dataset
