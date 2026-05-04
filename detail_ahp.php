@@ -265,7 +265,7 @@ $saatyScale = [
       <div class="card-hd">
         <h3>Hasil Uji Konsistensi</h3>
         <span class="note <?= $d['is_consistent']?'ok':'bad' ?>">
-          <?= $d['is_consistent'] ? '✅ CR < 0.1 — KONSISTEN' : '⚠ CR ≥ 0.1 — TIDAK KONSISTEN' ?>
+          <?= $d['is_consistent'] ? 'CR < 0.1 — KONSISTEN' : '⚠ CR ≥ 0.1 — TIDAK KONSISTEN' ?>
         </span>
       </div>
       <div class="consist-grid">
@@ -283,7 +283,7 @@ $saatyScale = [
           <div class="c-val <?= $d['is_consistent']?'ok':'bad' ?>"><?= round($d['consistency_ratio'],4) ?></div>
           <div class="c-lbl">Consistency Ratio (CR)</div>
           <div style="font-size:.75rem;margin-top:.3rem;color:<?= $d['is_consistent']?'var(--green)':'var(--accent)' ?>">
-            <?= $d['is_consistent'] ? 'CR < 0.1 ✓' : 'CR ≥ 0.1 ✗' ?>
+            <?= $d['is_consistent'] ? 'CR < 0.1 = Benar' : 'CR ≥ 0.1 = Salah' ?>
           </div>
         </div>
       </div>
