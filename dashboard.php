@@ -23,21 +23,16 @@ $page     = max(1, (int)($_GET['page'] ?? 1));
 $perPage  = (int)($_GET['per_page'] ?? 10);
 $search   = trim($_GET['search'] ?? '');
 
-// ── Load patients ────────────────────────────────────────────────────────────
+// ── 1. Load FULL dataset (JANGAN filter di SQL) ─────────────────────────────
 $patients = [];
 if ($pdo) {
     try {
-        $where = $search ? "WHERE patient_id LIKE :s OR age LIKE :s2" : "";
-        $sql   = "SELECT patient_id, age, bmi, d1_spo2_min, d1_heartrate_min
-                  FROM dataset_akumulasi
-                  $where
-                  ORDER BY patient_id
-                  LIMIT 200";
+        // Tanpa WHERE agar semua data dimuat untuk perhitungan ranking
+        $sql = "SELECT patient_id, age, bmi, d1_spo2_min, d1_heartrate_min
+                FROM dataset_akumulasi
+                ORDER BY patient_id
+                LIMIT 200";
         $stmt = $pdo->prepare($sql);
-        if ($search) {
-            $stmt->bindValue(':s',  "%$search%");
-            $stmt->bindValue(':s2', "%$search%");
-        }
         $stmt->execute();
         $patients = $stmt->fetchAll(PDO::FETCH_ASSOC);
     } catch (Exception $e) {
@@ -59,24 +54,44 @@ if (empty($patients)) {
     ];
 }
 
-// ── Calculate ────────────────────────────────────────────────────────────────
+// ── 2. Calculate menggunakan FULL dataset ────────────────────────────────────
 $sawEngine = new SAWEngine($patients);
 $sawResults = $sawEngine->calculate();
-$sawSummary = $sawEngine->getSummary();
+$sawSummary = $sawEngine->getSummary();  // ← TAMBAHKAN INI!
 
 $wpEngine  = new WPEngine($patients);
 $wpResults = $wpEngine->calculate();
-$wpSummary = $wpEngine->getSummary();
+$wpSummary = $wpEngine->getSummary();     // ← TAMBAHKAN INI JUGA!
 $comparison = $wpEngine->compareWithSAW($sawResults);
 
 $ahp = $sawEngine->getAHP();
 $ahpDetail = $ahp->getFullDetail();
 
-// Pagination
+// ── 3. Filter HASIL perhitungan (bukan data mentah) ─────────────────────────
+if ($search) {
+    $searchLower = strtolower($search);
+    
+    $filterFn = fn($row) => 
+        stripos($row['patient_id'], $search) !== false || 
+        stripos((string)$row['age'], $search) !== false;
+    
+    $sawResults = array_values(array_filter($sawResults, $filterFn));
+    $wpResults  = array_values(array_filter($wpResults, $filterFn));
+    
+    // Filter comparison: pastikan patient_id ada di hasil filter
+    $allowedIds = array_unique(array_merge(
+        array_column($sawResults, 'patient_id'),
+        array_column($wpResults, 'patient_id')
+    ));
+    $comparison = array_values(array_filter($comparison, fn($c) => in_array($c['patient_id'], $allowedIds)));
+}
+
+// ── 4. Pagination berdasarkan data yang SUDAH difilter ───────────────────────
 $totalRows  = count($sawResults);
 $totalPages = max(1, ceil($totalRows / $perPage));
 $page       = min($page, $totalPages);
 $offset     = ($page - 1) * $perPage;
+
 $sawPaged   = array_slice($sawResults, $offset, $perPage);
 $wpPaged    = array_slice($wpResults,  $offset, $perPage);
 $compPaged  = array_slice($comparison, $offset, $perPage);
