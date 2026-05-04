@@ -249,7 +249,7 @@ session_start();
   <div class="hero-badge">
     <span>●</span> Sistem Pendukung Keputusan ICU
   </div>
-  <h1>Prioritas Pasien ICU<br>dengan <em>Metode Cerdas</em></h1>
+  <h1>Prioritas Kritis<br>dengan <em>Presisi Data.</em></h1>
   <p>
     Membandingkan metode <strong>AHP+SAW</strong> dan <strong>AHP+WP</strong> untuk menentukan urutan prioritas pasien ICU berdasarkan kondisi klinis: usia, BMI, saturasi oksigen, dan detak jantung.
   </p>

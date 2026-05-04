@@ -18,9 +18,9 @@ try {
 }
 
 // ── Pagination & filter ──────────────────────────────────────────────────────
-$method   = $_GET['method'] ?? 'both';   // saw | wp | both
+$method   = $_GET['method'] ?? 'both';   // saw | wp | both | compare
 $page     = max(1, (int)($_GET['page'] ?? 1));
-$perPage  = (int)($_GET['per_page'] ?? 20);
+$perPage  = (int)($_GET['per_page'] ?? 10);
 $search   = trim($_GET['search'] ?? '');
 
 // ── Load patients ────────────────────────────────────────────────────────────
@@ -32,7 +32,7 @@ if ($pdo) {
                   FROM dataset_akumulasi
                   $where
                   ORDER BY patient_id
-                  LIMIT 200";  // batasi 200 untuk performa
+                  LIMIT 200";
         $stmt = $pdo->prepare($sql);
         if ($search) {
             $stmt->bindValue(':s',  "%$search%");
@@ -81,7 +81,7 @@ $sawPaged   = array_slice($sawResults, $offset, $perPage);
 $wpPaged    = array_slice($wpResults,  $offset, $perPage);
 $compPaged  = array_slice($comparison, $offset, $perPage);
 
-// Spearman correlation
+// ── Spearman correlation ─────────────────────────────────────────────────────
 function spearman(array $comparison): float {
     $n = count($comparison);
     if ($n < 2) return 1.0;
@@ -93,6 +93,43 @@ function spearman(array $comparison): float {
     return 1 - (6 * $d2) / ($n * ($n * $n - 1));
 }
 $spearman = round(spearman($comparison), 4);
+
+// ── Persiapan Data Untuk Grafik (Chart.js) ───────────────────────────────────
+$chartAHPWeights = array_values($ahpDetail['weights']);
+
+$countKritis = $sawSummary['by_priority']['KRITIS'] ?? 0;
+$countTinggi = $sawSummary['by_priority']['TINGGI'] ?? 0;
+$countSedang = $sawSummary['by_priority']['SEDANG'] ?? 0;
+$countRendah = $sawSummary['by_priority']['RENDAH'] ?? 0;
+$chartStatus = [$countKritis, $countTinggi, $countSedang, $countRendah];
+
+$chartLabelsTop10 = [];
+$chartSAWTop10 = [];
+$chartWPTop10 = [];
+$chartScatterData = [];
+
+$loopCount = 0;
+foreach($sawResults as $sr) {
+    $wpScore = 0;
+    foreach($wpResults as $wr) {
+        if($wr['patient_id'] == $sr['patient_id']) { 
+            $wpScore = $wr['wp_score']; 
+            break; 
+        }
+    }
+    
+    if($loopCount < 10) {
+        $chartLabelsTop10[] = $sr['patient_id'];
+        $chartSAWTop10[] = $sr['saw_score'];
+        $chartWPTop10[] = $wpScore;
+    }
+    
+    $chartScatterData[] = [
+        'x' => (float)$sr['saw_score'], 
+        'y' => (float)$wpScore
+    ];
+    $loopCount++;
+}
 ?>
 <!DOCTYPE html>
 <html lang="id">
@@ -159,6 +196,23 @@ $spearman = round(spearman($comparison), 4);
   .sv-yellow { color:#eab308; }
   .sv-green  { color:#22c55e; }
   .sv-blue   { color:#3b82f6; }
+
+  /* CHART GRID */
+  .chart-grid { display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-bottom:2rem; }
+  .chart-card {
+    background:var(--surface);border:1px solid var(--border);
+    border-radius:12px;padding:1.5rem;
+  }
+  .chart-card h3 { font-size:.95rem;font-weight:600;margin-bottom:1rem;color:var(--text);border-bottom:1px solid var(--border);padding-bottom:.5rem; }
+
+  /* SPEARMAN BOX */
+  .spearman-box {
+    background:var(--surface);border:1px solid var(--border);
+    border-radius:10px;padding:1.5rem 2rem;margin-bottom:1.5rem;
+  }
+  .spearman-val { font-size:2.5rem;font-family:'Crimson Pro',serif;font-weight:600;color:var(--blue); }
+  .corr-bar { height:8px;background:var(--border);border-radius:4px;margin-top:.5rem; }
+  .corr-fill { height:100%;background:linear-gradient(90deg,var(--blue),var(--green));border-radius:4px; }
 
   /* TABS */
   .tabs { display:flex;gap:.5rem;margin-bottom:1.5rem;border-bottom:1px solid var(--border);padding-bottom:0; }
@@ -234,10 +288,6 @@ $spearman = round(spearman($comparison), 4);
   .pag-btn:hover,.pag-btn.active { background:var(--blue);color:#fff;border-color:var(--blue); }
   .pag-btn.disabled { opacity:.3;pointer-events:none; }
 
-  /* COMPARISON CHART */
-  .corr-bar { height:8px;background:var(--border);border-radius:4px;margin-top:.5rem; }
-  .corr-fill { height:100%;background:linear-gradient(90deg,var(--blue),var(--green));border-radius:4px; }
-
   /* SEARCH */
   .toolbar {
     display:flex;align-items:center;gap:1rem;margin-bottom:1.5rem;
@@ -261,18 +311,21 @@ $spearman = round(spearman($comparison), 4);
   }
   .toggle-btn:hover,.toggle-btn.act { background:var(--blue);color:#fff;border-color:var(--blue); }
 
-  .spearman-box {
-    background:var(--surface);border:1px solid var(--border);
-    border-radius:10px;padding:1.5rem 2rem;margin-bottom:1.5rem;
-  }
-  .spearman-val { font-size:2.5rem;font-family:'Crimson Pro',serif;font-weight:600;color:var(--blue); }
-
   @media(max-width:900px){
     .stats-row{grid-template-columns:repeat(2,1fr);}
+    .chart-grid{grid-template-columns:1fr;}
     nav .nav-links{display:none;}
     .page{padding:1rem;}
   }
 </style>
+
+<!-- jQuery & DataTables CSS/JS -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.4/css/jquery.dataTables.min.css">
+<script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
+
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
 <nav>
@@ -287,7 +340,7 @@ $spearman = round(spearman($comparison), 4);
 <div class="page">
   <div class="page-header">
     <h1>Dashboard Prioritas ICU</h1>
-    <p>Perbandingan ranking AHP+SAW vs AHP+WP &nbsp;·&nbsp; <?= count($patients) ?> pasien dimuat &nbsp;·&nbsp; <?= $pdo ? 'Database: Terhubung ✓' : 'Mode Demo (DB tidak terhubung)' ?></p>
+    <p>Perbandingan ranking AHP+SAW vs AHP+WP &nbsp;·&nbsp; <?= count($patients) ?> pasien dimuat &nbsp;·&nbsp; <?= $pdo ? 'Database: Terhubung' : 'Mode Demo (DB tidak terhubung)' ?></p>
     <?php if ($dbError): ?>
       <p style="color:var(--orange);font-size:.8rem;margin-top:.3rem">⚠ <?= htmlspecialchars($dbError) ?></p>
     <?php endif; ?>
@@ -340,6 +393,41 @@ $spearman = round(spearman($comparison), 4);
     <div class="stat-card"><div class="sv sv-blue"><?= count($patients) ?></div><div class="sl">Total Pasien</div></div>
   </div>
 
+  <!-- CHARTS SECTION -->
+  <div class="chart-grid">
+    <!-- Radar Chart AHP -->
+    <div class="chart-card">
+      <h3>Visualisasi Bobot Kriteria (AHP)</h3>
+      <div style="height: 250px; display: flex; justify-content: center;">
+        <canvas id="radarChart"></canvas>
+      </div>
+    </div>
+    
+    <!-- Donut Chart Status -->
+    <div class="chart-card">
+      <h3>Distribusi Status Pasien (Berdasarkan SAW)</h3>
+      <div style="height: 250px; display: flex; justify-content: center;">
+        <canvas id="donutChart"></canvas>
+      </div>
+    </div>
+
+    <!-- Bar Chart Top 10 -->
+    <div class="chart-card">
+      <h3>Top 10 Pasien Prioritas (Skor SAW vs WP)</h3>
+      <div style="height: 250px;">
+        <canvas id="barChart"></canvas>
+      </div>
+    </div>
+
+    <!-- Scatter Plot Korelasi -->
+    <div class="chart-card">
+      <h3>Peta Korelasi Skor (SAW vs WP)</h3>
+      <div style="height: 250px;">
+        <canvas id="scatterChart"></canvas>
+      </div>
+    </div>
+  </div>
+
   <!-- TOOLBAR -->
   <div class="toolbar">
     <form method="GET" style="display:contents">
@@ -347,6 +435,7 @@ $spearman = round(spearman($comparison), 4);
         <span style="color:var(--muted)">🔍</span>
         <input type="text" name="search" placeholder="Cari patient ID..." value="<?= htmlspecialchars($search) ?>" onchange="this.form.submit()">
         <input type="hidden" name="method" value="<?= $method ?>">
+        <input type="hidden" name="page" value="1">
       </div>
     </form>
     <div class="method-toggle">
@@ -368,7 +457,7 @@ $spearman = round(spearman($comparison), 4);
       <span class="meta">Skor tertinggi = prioritas pertama</span>
     </div>
     <div class="tbl-wrap">
-      <table>
+      <table class="datatable-init" style="width:100%">
         <thead>
           <tr>
             <th>Rank</th><th>Patient ID</th><th>Usia</th><th>BMI</th>
@@ -407,7 +496,7 @@ $spearman = round(spearman($comparison), 4);
       <span class="meta">V(i) = S(i) / Σ S(k)</span>
     </div>
     <div class="tbl-wrap">
-      <table>
+      <table class="datatable-init" style="width:100%">
         <thead>
           <tr>
             <th>Rank</th><th>Patient ID</th><th>Usia</th><th>BMI</th>
@@ -447,7 +536,7 @@ $spearman = round(spearman($comparison), 4);
       <span class="meta">Spearman ρ = <?= $spearman ?></span>
     </div>
     <div class="tbl-wrap">
-      <table>
+      <table class="datatable-init" style="width:100%">
         <thead>
           <tr>
             <th>Patient ID</th>
@@ -500,5 +589,155 @@ function paginationHTML(int $page, int $total, string $method): string {
     return $html;
 }
 ?>
+
+<!-- SCRIPT INISIALISASI -->
+<script>
+// ── 1. INISIALISASI DATATABLES ───────────────────────────────────────────────
+$(document).ready(function() {
+    $('.datatable-init').DataTable({
+        "pageLength": <?= $perPage ?>,
+        "lengthMenu": [5, 10, 25, 50, 100],
+        "paging": false,
+        "searching": false,
+        "info": false,
+        "language": {
+            "paginate": {
+                "next": "Lanjut →",
+                "previous": "← Kembali"
+            }
+        }
+    });
+});
+
+// ── 2. INISIALISASI CHART.JS ─────────────────────────────────────────────────
+const style = getComputedStyle(document.body);
+const cBlue   = style.getPropertyValue('--blue').trim();
+const cAccent = style.getPropertyValue('--accent').trim();
+const cGreen  = style.getPropertyValue('--green').trim();
+const cOrange = style.getPropertyValue('--orange').trim();
+const cYellow = style.getPropertyValue('--yellow').trim();
+const cMuted  = style.getPropertyValue('--muted').trim();
+
+Chart.defaults.font.family = "'Space Grotesk', sans-serif";
+Chart.defaults.color = cMuted;
+
+const ahpWeightsData = <?= json_encode($chartAHPWeights) ?>;
+const statusData = <?= json_encode($chartStatus) ?>;
+const labelsTop10 = <?= json_encode($chartLabelsTop10) ?>;
+const sawTop10 = <?= json_encode($chartSAWTop10) ?>;
+const wpTop10 = <?= json_encode($chartWPTop10) ?>;
+const scatterData = <?= json_encode($chartScatterData) ?>;
+
+// A. Radar Chart (AHP)
+new Chart(document.getElementById('radarChart'), {
+    type: 'radar',
+    data: {
+        labels: ['Usia', 'BMI', 'SpO2 Min', 'HR Min'],
+        datasets: [{
+            label: 'Bobot AHP',
+            data: ahpWeightsData.map(v => v * 100),
+            backgroundColor: 'rgba(201, 206, 216, 0.15)',
+            borderColor: cBlue,
+            pointBackgroundColor: cBlue,
+            borderWidth: 2
+        }]
+    },
+    options: {
+        scales: { r: { beginAtZero: true, max: 60, ticks: { display: false } } },
+        plugins: { legend: { display: false } }
+    }
+});
+
+// B. Donut Chart (Status)
+new Chart(document.getElementById('donutChart'), {
+    type: 'doughnut',
+    data: {
+        labels: ['Kritis', 'Tinggi', 'Sedang', 'Rendah'],
+        datasets: [{
+            data: statusData,
+            backgroundColor: [cAccent, cOrange, cYellow, cGreen],
+            borderWidth: 0,
+            hoverOffset: 4
+        }]
+    },
+    options: {
+        cutout: '70%',
+        plugins: { legend: { position: 'bottom' } }
+    }
+});
+
+// C. Bar Chart (Top 10) - Dual Y-Axis
+new Chart(document.getElementById('barChart'), {
+    type: 'bar',
+    data: {
+        labels: labelsTop10,
+        datasets: [
+            { 
+                label: 'Skor SAW', 
+                data: sawTop10, 
+                backgroundColor: cBlue, 
+                borderRadius: 4,
+                yAxisID: 'y'
+            },
+            { 
+                label: 'Skor WP', 
+                data: wpTop10, 
+                backgroundColor: cMuted, 
+                borderRadius: 4,
+                yAxisID: 'y1'
+            }
+        ]
+    },
+    options: {
+        responsive: true, 
+        maintainAspectRatio: false,
+        scales: { 
+            y: { 
+                type: 'linear',
+                display: true,
+                position: 'left',
+                beginAtZero: false,
+                title: { display: true, text: 'Nilai SAW', font: {size: 11} }
+            },
+            y1: { 
+                type: 'linear',
+                display: true,
+                position: 'right',
+                beginAtZero: true,
+                title: { display: true, text: 'Nilai WP', font: {size: 11} },
+                grid: { drawOnChartArea: false }
+            }
+        },
+        plugins: { legend: { position: 'top' } }
+    }
+});
+
+// D. Scatter Plot (Korelasi)
+new Chart(document.getElementById('scatterChart'), {
+    type: 'scatter',
+    data: {
+        datasets: [{
+            label: 'Sebaran Pasien',
+            data: scatterData,
+            backgroundColor: 'rgba(239, 68, 68, 0.6)',
+            borderColor: cAccent,
+            pointRadius: 4,
+            pointHoverRadius: 7
+        }]
+    },
+    options: {
+        responsive: true, maintainAspectRatio: false,
+        scales: {
+            x: { title: { display: true, text: 'Skor SAW' } },
+            y: { title: { display: true, text: 'Skor WP' } }
+        },
+        plugins: { legend: { display: false }, tooltip: {
+            callbacks: {
+                label: function(ctx) { return 'SAW: ' + ctx.parsed.x + ', WP: ' + ctx.parsed.y; }
+            }
+        }}
+    }
+});
+</script>
 </body>
 </html>
