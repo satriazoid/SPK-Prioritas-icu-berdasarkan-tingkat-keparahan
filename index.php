@@ -276,9 +276,9 @@ session_start();
   } catch (Exception $e) { /* silent */ }
   ?>
   <div class="stat-item"><div class="val val-blue"><?= number_format($totalPatients) ?></div><div class="lbl">Total Pasien</div></div>
-  <div class="stat-item"><div class="val val-red">4</div><div class="lbl">Kriteria Evaluasi</div></div>
-  <div class="stat-item"><div class="val val-orange">2</div><div class="lbl">Metode MCDM</div></div>
-  <div class="stat-item"><div class="val val-green">&lt;0.1</div><div class="lbl">Consistency Ratio AHP</div></div>
+  <div class="stat-item"><div class="val val-blue">4</div><div class="lbl">Kriteria Evaluasi</div></div>
+  <div class="stat-item"><div class="val val-blue">2</div><div class="lbl">Metode MCDM</div></div>
+  <div class="stat-item"><div class="val val-blue">&lt;0.1</div><div class="lbl">Consistency Ratio AHP</div></div>
 </div>
 
 <!-- METHODS -->
@@ -288,7 +288,7 @@ session_start();
   <div class="method-grid">
     <!-- AHP+SAW -->
     <a href="dashboard.php?method=saw" class="method-card">
-      <span class="method-tag tag-red">AHP + SAW</span>
+      <span class="method-tag tag-blue">AHP + SAW</span>
       <h3>Simple Additive Weighting</h3>
       <p>Menormalisasi setiap kriteria lalu mengalikannya dengan bobot AHP. Skor akhir adalah penjumlahan tertimbang — metode yang sederhana, transparan, dan mudah diinterpretasikan.</p>
       <div class="method-steps">
