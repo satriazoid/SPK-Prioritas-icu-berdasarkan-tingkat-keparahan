@@ -66,10 +66,10 @@ if (isset($_GET['edit'])) {
 // Fetch all patients
 $searchQuery = trim($_GET['search'] ?? '');
 if ($searchQuery) {
-    $stmt = $pdo->prepare("SELECT * FROM dataset_akumulasi WHERE patient_id LIKE ? ORDER BY patient_id DESC LIMIT 100");
-    $stmt->execute(['%' . $searchQuery . '%']);
+  $stmt = $pdo->prepare("SELECT * FROM dataset_akumulasi WHERE patient_id LIKE ? ORDER BY patient_id DESC LIMIT 100");
+  $stmt->execute(['%' . $searchQuery . '%']);
 } else {
-    $stmt = $pdo->query("SELECT * FROM dataset_akumulasi ORDER BY patient_id DESC LIMIT 100");
+  $stmt = $pdo->query("SELECT * FROM dataset_akumulasi ORDER BY patient_id DESC LIMIT 100");
 }
 $patients = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
@@ -341,11 +341,11 @@ $stats = $stmt->fetch(PDO::FETCH_ASSOC);
 <body>
 
   <nav>
-    <div class="nav-logo">ICU Admin panel</div>
+    <div class="nav-logo">ICU ADMIN PANEL</div>
     <div class="nav-links">
-    <a href="dashboard.php">Lihat Web</a>
-    <a href="logout.php">Logout (<?= htmlspecialchars($_SESSION['username']) ?>)</a>
-  </div>
+      <a href="dashboard.php">Lihat Web</a>
+      <a href="logout.php">Logout (<?= htmlspecialchars($_SESSION['username']) ?>)</a>
+    </div>
   </nav>
 
   <div class="container">
@@ -421,18 +421,22 @@ $stats = $stmt->fetch(PDO::FETCH_ASSOC);
       </div>
 
       <!-- Tabel Data -->
-    <div class="card">
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem; border-bottom:1px solid var(--border); padding-bottom:.5rem;">
-        <h3 style="border:none; margin:0; padding:0;">Daftar Pasien</h3>
-        <form method="GET" action="admin_dashboard.php" style="display:flex; gap:.5rem;">
-          <input type="text" name="search" placeholder="Cari ID Pasien..." value="<?= htmlspecialchars($searchQuery) ?>" style="padding:.4rem .8rem; border-radius:6px; border:1px solid var(--border); background:var(--surface2); color:var(--text); font-family:inherit;">
-          <button type="submit" class="btn btn-primary" style="width:auto; padding:.4rem 1rem;">Cari</button>
-          <?php if($searchQuery): ?>
-            <a href="admin_dashboard.php" class="btn" style="background:var(--surface2); color:var(--text); border:1px solid var(--border); padding:.4rem 1rem; text-decoration:none;">Reset</a>
-          <?php endif; ?>
-        </form>
-      </div>
-      <div class="table-responsive">
+      <div class="card">
+        <div
+          style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem; border-bottom:1px solid var(--border); padding-bottom:.5rem;">
+          <h3 style="border:none; margin:0; padding:0;">Daftar Pasien</h3>
+          <form method="GET" action="admin_dashboard.php" style="display:flex; gap:.5rem;">
+            <input type="text" name="search" placeholder="Cari ID Pasien..."
+              value="<?= htmlspecialchars($searchQuery) ?>"
+              style="padding:.4rem .8rem; border-radius:6px; border:1px solid var(--border); background:var(--surface2); color:var(--text); font-family:inherit;">
+            <button type="submit" class="btn btn-primary" style="width:auto; padding:.4rem 1rem;">Cari</button>
+            <?php if ($searchQuery): ?>
+              <a href="admin_dashboard.php" class="btn"
+                style="background:var(--surface2); color:var(--text); border:1px solid var(--border); padding:.4rem 1rem; text-decoration:none;">Reset</a>
+            <?php endif; ?>
+          </form>
+        </div>
+        <div class="table-responsive">
           <table>
             <thead>
               <tr>

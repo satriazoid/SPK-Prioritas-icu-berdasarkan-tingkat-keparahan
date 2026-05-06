@@ -389,7 +389,7 @@ foreach ($sawResults as $sr) {
 
     .corr-fill {
       height: 100%;
-      background: linear-gradient(90deg, var(--blue));
+      background: linear-gradient(90deg, var(--));
       border-radius: 4px;
     }
 
